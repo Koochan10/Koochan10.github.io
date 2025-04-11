@@ -42,7 +42,7 @@
 
             const fixedAmount = nightHours >= 20 ? 13000 : 3000;
             const shiftAllowance = fixedAmount + 450 * shiftHours;
-            const nightAllowance = ((baseSalary + fixedAmount) / 120) * nightHours * 0.25;
+            const nightAllowance = ((baseSalary + fixedAmount) / 160 + 450) * nightHours * 0.25;
             const total = baseSalary + shiftAllowance + nightAllowance;
 
             document.getElementById("results").innerHTML =
