@@ -2,56 +2,384 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>給料計算ツール</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シフト・深夜・時間外手当 計算ツール</title>
     <style>
-        body { font-family: sans-serif; margin: 30px; }
-        label { display: block; margin-top: 15px; }
-        input[type="number"] { width: 100px; }
-        .result { margin-top: 20px; font-weight: bold; }
-        .section { margin-top: 30px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            margin: 0;
+            padding: 10px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-size: 18px;
+            color: #1e3a8a;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e3a8a;
+            border-left: 4px solid #3b82f6;
+            padding-left: 8px;
+            margin-top: 20px;
+            margin-bottom: 12px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4b5563;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: #fff2cc; 
+            -webkit-appearance: none;
+        }
+        select {
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path fill='%23666' d='M0,3l5,5l5,-5z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 10px;
+        }
+        .result-box {
+            background-color: #f0f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+        .result-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: bold;
+            color: #b45309;
+            background-color: #fef3c7;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid #f59e0b;
+        }
+        .val {
+            font-weight: bold;
+        }
+        .note {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .hours-summary {
+            background-color: #e0f2fe;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #bae6fd;
+            margin-bottom: 15px;
+        }
+        .hours-summary .result-row {
+            border-bottom-color: #93c5fd;
+        }
+        .radio-memo {
+            font-size: 11px;
+            color: #2563eb;
+            background-color: #eff6ff;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
     </style>
 </head>
-<body>
-    <h2>給料計算ツール</h2>
+<body onload="updateDaysFromCycle()">
 
-    <label>基本給（円）: <input type="number" id="baseSalary" value="266286" /></label>
-    <label>シフト時間（時間）: <input type="number" id="shiftHours" step="0.25" /></label>
-    <label>深夜時間（時間）: <input type="number" id="nightHours" step="0.25" /></label>
+<div class="container">
+    <h1>シフト・深夜・時間外手当 計算</h1>
+    <div class="subtitle">業務企画職専用 / 所定160h固定 / リアルタイム完全連動版</div>
 
-    <button onclick="calculate()">計算する</button>
+    <div class="section-title">1. 基本情報</div>
+    <div class="form-group">
+        <label for="salary">月額賃金 (基本給＋各種手当)</label>
+        <input type="number" id="salary" value="250000" min="0" oninput="calculate()">
+    </div>
 
-    <div class="section result" id="results"></div>
+    <div class="section-title">2. シフトサイクルとお休み設定</div>
+    <div class="radio-memo">
+        💡 <b>【確実連動版】</b><br>
+        月日数やシフト、お休みを変更すると、確実に3項の日数へ自動反映されます。
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label for="month_days">当月の日数</label>
+            <select id="month_days" onchange="updateDaysFromCycle()">
+                <option value="31">31日</option>
+                <option value="30" selected>30日</option>
+                <option value="29">29日</option>
+                <option value="28">28日</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="start_shift">月初(1日)のシフト</label>
+            <select id="start_shift" onchange="updateDaysFromCycle()">
+                <option value="D">D 勤務</option>
+                <option value="S">S 勤務</option>
+                <option value="N">N 勤務</option>
+                <option value="明け">明け</option>
+                <option value="休み">休み</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label for="night_off">Night Off 回数</label>
+            <input type="number" id="night_off" value="0" min="0" oninput="updateDaysFromCycle()">
+        </div>
+        <div class="form-group">
+            <label for="ukyu_d">D有給 回数</label>
+            <input type="number" id="ukyu_d" value="0" min="0" oninput="updateDaysFromCycle()">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ukyu_s">S有給 回数</label>
+            <input type="number" id="ukyu_s" value="0" min="0" oninput="updateDaysFromCycle()">
+        </div>
+        <div class="form-group">
+            <label for="ukyu_n">N有給 回数</label>
+            <input type="number" id="ukyu_n" value="0" min="0" oninput="updateDaysFromCycle()">
+        </div>
+    </div>
 
-    <script>
-        function roundUpToTenth(value) {
-            return Math.ceil(value * 10) / 10;
-        }
+    <div class="section-title">3. 計算された勤務日数（直接修正も可能）</div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="days_d">D出勤日数</label>
+            <input type="number" id="days_d" value="0" min="0" oninput="calculate()">
+        </div>
+        <div class="form-group">
+            <label for="days_s">S出勤日数</label>
+            <input type="number" id="days_s" value="0" min="0" oninput="calculate()">
+        </div>
+        <div class="form-group">
+            <label for="days_n">N出勤日数</label>
+            <input type="number" id="days_n" value="0" min="0" oninput="calculate()">
+        </div>
+    </div>
+    <div class="note" style="margin-bottom: 15px;">※2項から自動入力されますが、手動で直接数字を書き換えることも可能です。</div>
 
-        function calculate() {
-            const baseSalary = parseFloat(document.getElementById("baseSalary").value);
-            let shiftHours = parseFloat(document.getElementById("shiftHours").value);
-            let nightHours = parseFloat(document.getElementById("nightHours").value);
+    <div class="section-title">4. 残業（時間外労働）の入力</div>
+    <div class="form-group">
+        <label for="overtime_total">当月の総残業時間 (h)</label>
+        <input type="number" id="overtime_total" value="0" min="0" step="0.1" oninput="calculate()">
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="overtime_shift">内、シフト時間帯の残業 (h)</label>
+            <input type="number" id="overtime_shift" value="0" min="0" step="0.1" oninput="calculate()">
+            <div class="note">※18:00-08:30</div>
+        </div>
+        <div class="form-group">
+            <label for="overtime_midnight">内、深夜時間帯の残業 (h)</label>
+            <input type="number" id="overtime_midnight" value="0" min="0" step="0.1" oninput="calculate()">
+            <div class="note">※22:00-05:00</div>
+        </div>
+    </div>
 
-            if (isNaN(baseSalary) || isNaN(shiftHours) || isNaN(nightHours)) {
-                document.getElementById("results").innerText = "すべての値を入力してください。";
-                return;
-            }
+    <div class="section-title">5. 月間合計時間 (小数点第1位に丸め)</div>
+    <div class="hours-summary">
+        <div class="result-row">
+            <span>シフト時間 (18:00〜08:30) 合計:</span>
+            <span><span class="val" id="total_shift_hours">0.0</span> 時間</span>
+        </div>
+        <div class="result-row">
+            <span>深夜時間 (22:00〜05:00) 合計:</span>
+            <span><span class="val" id="total_mid_hours">0.0</span> 時間</span>
+        </div>
+        <div class="result-row">
+            <span>総残業（時間外労働）時間:</span>
+            <span><span class="val" id="total_overtime_hours">0.0</span> 時間</span>
+        </div>
+    </div>
 
-            shiftHours = roundUpToTenth(shiftHours);
-            nightHours = roundUpToTenth(nightHours);
+    <div class="section-title">6. 最終手当 計算結果</div>
+    <div class="result-box">
+        <div class="result-row">
+            <span>1時間あたりの計算基準額:</span>
+            <span><span class="val" id="base_unit_price">0</span> 円</span>
+        </div>
+        <div class="result-row">
+            <span>① 基本シフト手当額:</span>
+            <span><span class="val" id="shift_base">0</span> 円</span>
+        </div>
+        <div class="result-row">
+            <span>② 夜間・早朝時間加算額 (×450円):</span>
+            <span><span class="val" id="shift_addition">0</span> 円</span>
+        </div>
+        <div class="result-row">
+            <span>③ 深夜手当額 (25%割増):</span>
+            <span><span class="val" id="midnight_allowance">0</span> 円</span>
+        </div>
+        <div class="result-row">
+            <span>④ 時間外手当額:</span>
+            <span><span class="val" id="overtime_allowance">0</span> 円</span>
+        </div>
+    </div>
 
-            const fixedAmount = nightHours >= 20 ? 13000 : 3000;
-            const shiftAllowance = fixedAmount + 450 * shiftHours;
-            const nightAllowance = ((baseSalary + fixedAmount) / 160 + 450) * nightHours * 0.25;
-            const total = baseSalary + shiftAllowance + nightAllowance;
+    <div class="total-row">
+        <span>当月手当 合計 (①+②+③+④):</span>
+        <span><span id="total_amount">0</span> 円</span>
+    </div>
+</div>
 
-            document.getElementById("results").innerHTML =
-                `<div>■ 基本給：${baseSalary.toLocaleString()} 円</div>` +
-                //`<div>■ 固定額：${fixedAmount.toLocaleString()} 円（深夜${nightHours}時間 → ${nightHours >= 20 ? "13,000円" : "3,000円"}）</div>` +
-                `<div>■ シフト手当：${Math.round(shiftAllowance).toLocaleString()} 円</div>` +
-                `<div>■ 夜勤手当：${Math.round(nightAllowance).toLocaleString()} 円</div>` +
-                `<br><div style="font-size: 1.2em;">◎ 総支給額：${Math.round(total).toLocaleString()} 円</div>`;
-        }
-    </script>
+<script>
+// サイクル設定から日数を自動計算して反映する関数
+function updateDaysFromCycle() {
+    var monthDays = parseInt(document.getElementById('month_days').value) || 30;
+    var startShift = document.getElementById('start_shift').value;
+    var nightOff = parseInt(document.getElementById('night_off').value) || 0;
+    var ukyuD = parseInt(document.getElementById('ukyu_d').value) || 0;
+    var ukyuS = parseInt(document.getElementById('ukyu_s').value) || 0;
+    var ukyuN = parseInt(document.getElementById('ukyu_n').value) || 0;
+
+    // 5日間サイクル: D -> S -> N -> 明け -> 休み
+    var cycle = ['D', 'S', 'N', '明け', '休み'];
+    var startIndex = cycle.indexOf(startShift);
+    if (startIndex === -1) startIndex = 0;
+
+    var counts = { 'D': 0, 'S': 0, 'N': 0, '明け': 0, '休み': 0 };
+
+    for (var i = 0; i < monthDays; i++) {
+        var currentShift = cycle[(startIndex + i) % 5];
+        counts[currentShift]++;
+    }
+
+    // お休み・有給の回数を差し引く
+    var finalD = counts['D'] - ukyuD;
+    var finalS = counts['S'] - ukyuS;
+    var finalN = counts['N'] - nightOff - ukyuN;
+
+    if (finalD < 0) finalD = 0;
+    if (finalS < 0) finalS = 0;
+    if (finalN < 0) finalN = 0;
+
+    // 勤務実績入力欄へ自動で値をセット
+    document.getElementById('days_d').value = finalD;
+    document.getElementById('days_s').value = finalS;
+    document.getElementById('days_n').value = finalN;
+
+    // 全体計算を呼ぶ
+    calculate();
+}
+
+// すべての数値を集計して手当を計算する関数
+function calculate() {
+    var salary = parseFloat(document.getElementById('salary').value) || 0;
+    var workHours = 160;
+    var baseUnitPrice = salary / workHours;
+
+    var daysD = parseFloat(document.getElementById('days_d').value) || 0;
+    var daysS = parseFloat(document.getElementById('days_s').value) || 0;
+    var daysN = parseFloat(document.getElementById('days_n').value) || 0;
+
+    // シフトに基づく基準時間
+    var baseShiftHours = (daysD * 1.0) + (daysS * 6.5) + (daysN * 9.75);
+    var baseMidHours = (daysD * 0.0) + (daysS * 2.5) + (daysN * 6.5);
+
+    var overtimeTotal = parseFloat(document.getElementById('overtime_total').value) || 0;
+    var overtimeShift = parseFloat(document.getElementById('overtime_shift').value) || 0;
+    var overtimeMidnight = parseFloat(document.getElementById('overtime_midnight').value) || 0;
+
+    // 時間の合算
+    var rawShiftHours = baseShiftHours + overtimeShift;
+    var rawMidHours = baseMidHours + overtimeMidnight;
+    var rawOvertimeHours = overtimeTotal;
+
+    // 小数点第2位を四捨五入して、小数第1位に丸める
+    var totalShiftHours = Math.round(rawShiftHours * 10) / 10;
+    var totalMidHours = Math.round(rawMidHours * 10) / 10;
+    var totalOvertimeHours = Math.round(rawOvertimeHours * 10) / 10;
+
+    // 画面表示の更新
+    document.getElementById('total_shift_hours').innerText = totalShiftHours.toFixed(1);
+    document.getElementById('total_mid_hours').innerText = totalMidHours.toFixed(1);
+    document.getElementById('total_overtime_hours').innerText = totalOvertimeHours.toFixed(1);
+
+    // ① 基本シフト手当（深夜合計時間が20時間超で13,000円、それ以下は3,000円）
+    var shiftBase = (totalMidHours > 20) ? 13000 : 3000;
+    
+    // ② 夜間・早朝時間加算額 (1時間あたり450円)
+    var shiftAddition = totalShiftHours * 450;
+    
+    // ③ 深夜手当額 (計算基準額の25% × 深夜時間)
+    var midnightAllowance = baseUnitPrice * 0.25 * totalMidHours;
+    
+    // ④ 時間外手当額 (基本125%、月60時間超の部分は150%)
+    var overtimeAllowance = 0;
+    if (totalOvertimeHours > 60) {
+        overtimeAllowance = (baseUnitPrice * 1.25 * 60) + (baseUnitPrice * 1.50 * (totalOvertimeHours - 60));
+    } else {
+        overtimeAllowance = baseUnitPrice * 1.25 * totalOvertimeHours;
+    }
+    
+    var totalAmount = shiftBase + shiftAddition + midnightAllowance + overtimeAllowance;
+
+    // 結果の反映
+    document.getElementById('base_unit_price').innerText = baseUnitPrice.toLocaleString('ja-JP', {maximumFractionDigits: 2});
+    document.getElementById('shift_base').innerText = shiftBase.toLocaleString('ja-JP');
+    document.getElementById('shift_addition').innerText = Math.round(shiftAddition).toLocaleString('ja-JP');
+    document.getElementById('midnight_allowance').innerText = Math.round(midnightAllowance).toLocaleString('ja-JP');
+    document.getElementById('overtime_allowance').innerText = Math.round(overtimeAllowance).toLocaleString('ja-JP');
+    document.getElementById('total_amount').innerText = Math.round(totalAmount).toLocaleString('ja-JP');
+}
+</script>
+
 </body>
 </html>
