@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>シフト・深夜・時間外手当＆給与手取り計算ツール</title>
+    <title>シフト・深夜手当＆給与手取り計算ツール</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -162,7 +162,7 @@
 
 <div class="container">
     <h1>給与・手当・手取り 総合計算</h1>
-    <div class="subtitle">業務企画職専用 / 所定160h固定 / リアルタイム完全連動版</div>
+    <div class="subtitle">業務企画職専用 / 新計算式・N勤深夜6.25h対応 / リアルタイム完全連動</div>
 
     <div class="section-title">1. 基本情報</div>
     <div class="form-group">
@@ -218,7 +218,7 @@
         </div>
     </div>
 
-    <div class="section-title">3. 計算された勤務日数（直接修正も可能）</div>
+    <div class="section-title">3. 計算された勤務日数</div>
     <div class="form-row">
         <div class="form-group">
             <label for="days_d">D出勤日数</label>
@@ -234,23 +234,35 @@
         </div>
     </div>
 
-    <div class="section-title">4. 残業（時間外労働）の入力</div>
-    <div class="form-group">
-        <label for="overtime_total">当月の総残業時間 (h)</label>
-        <input type="number" id="overtime_total" value="0" min="0" step="0.1" oninput="calculate()">
-    </div>
+    <div class="section-title">4. 勤務時間の直接修正（手入力用）</div>
+    <div class="note" style="margin-bottom: 10px;">※日数の自動計算時間を直接上書き（修正）したい場合のみ入力してください（通常は空欄でOK）。</div>
     <div class="form-row">
         <div class="form-group">
-            <label for="overtime_shift">内、シフト時間帯の残業 (h)</label>
-            <input type="number" id="overtime_shift" value="0" min="0" step="0.1" oninput="calculate()">
+            <label for="custom_shift">手入力用 シフト時間 (h)</label>
+            <input type="number" id="custom_shift" value="" placeholder="自動計算値を上書き" min="0" step="0.1" oninput="calculate()">
         </div>
         <div class="form-group">
-            <label for="overtime_midnight">内、深夜時間帯の残業 (h)</label>
-            <input type="number" id="overtime_midnight" value="0" min="0" step="0.1" oninput="calculate()">
+            <label for="custom_mid">手入力用 深夜時間 (h)</label>
+            <input type="number" id="custom_mid" value="" placeholder="自動計算値を上書き" min="0" step="0.1" oninput="calculate()">
         </div>
     </div>
 
-    <div class="section-title">5. 月間合計時間 (小数点第1位に丸め)</div>
+    <div class="section-title">5. 残業（時間外労働）による時間上乗せ</div>
+    <div class="note" style="margin-bottom: 10px;">※残業分の時間がシフト時間・深夜時間に被る場合は以下に入力してください。</div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="overtime_shift">シフト時間帯の残業 (h)</label>
+            <input type="number" id="overtime_shift" value="0" min="0" step="0.1" oninput="calculate()">
+            <div class="note">※18:00-08:30の間</div>
+        </div>
+        <div class="form-group">
+            <label for="overtime_midnight">深夜時間帯の残業 (h)</label>
+            <input type="number" id="overtime_midnight" value="0" min="0" step="0.1" oninput="calculate()">
+            <div class="note">※22:00-05:00の間</div>
+        </div>
+    </div>
+
+    <div class="section-title">6. 月間合計時間 (小数点第1位に丸め)</div>
     <div class="hours-summary">
         <div class="result-row">
             <span>シフト時間 (18:00〜08:30) 合計:</span>
@@ -260,48 +272,32 @@
             <span>深夜時間 (22:00〜05:00) 合計:</span>
             <span><span class="val" id="total_mid_hours">0.0</span> 時間</span>
         </div>
-        <div class="result-row">
-            <span>総残業（時間外労働）時間:</span>
-            <span><span class="val" id="total_overtime_hours">0.0</span> 時間</span>
-        </div>
     </div>
 
-    <div class="section-title">6. 各種手当 計算結果</div>
+    <div class="section-title">7. 各種手当 計算結果</div>
     <div class="result-box">
         <div class="result-row">
-            <span>1時間あたりの計算基準額:</span>
-            <span><span class="val" id="base_unit_price">0</span> 円</span>
-        </div>
-        <div class="result-row">
-            <span>① 基本シフト手当額:</span>
-            <span><span class="val" id="shift_base">0</span> 円</span>
-        </div>
-        <div class="result-row">
-            <span>② 夜間・早朝時間加算額 (×450円):</span>
-            <span><span class="val" id="shift_addition">0</span> 円</span>
-        </div>
-        <div class="result-row">
-            <span>③ 深夜手当額 (25%割増):</span>
+            <span>① 深夜手当:</span>
             <span><span class="val" id="midnight_allowance">0</span> 円</span>
         </div>
         <div class="result-row">
-            <span>④ 時間外手当額:</span>
-            <span><span class="val" id="overtime_allowance">0</span> 円</span>
+            <span>② シフト手当:</span>
+            <span><span class="val" id="shift_allowance_final">0</span> 円</span>
         </div>
         <div class="total-row">
-            <span>当月手当 合計 (①〜④):</span>
+            <span>当月手当 合計 (①＋②):</span>
             <span><span id="total_allowance">0</span> 円</span>
         </div>
     </div>
 
-    <div class="section-title">7. 給与総合支給額・手取り予想</div>
+    <div class="section-title">8. 給与総合支給額・手取り予想</div>
     <div class="salary-box">
         <div class="result-row" style="border-bottom-color: #fde68a;">
             <span>基本給・固定手当 (月額):</span>
             <span><span class="val" id="res_base_salary">0</span> 円</span>
         </div>
         <div class="result-row" style="border-bottom-color: #fde68a;">
-            <span>当月各種手当 合計:</span>
+            <span>当月各種手当 合計 (①＋②):</span>
             <span>＋ <span class="val" id="res_total_allowance">0</span> 円</span>
         </div>
         <div class="salary-row" style="font-weight: bold; font-size: 16px; color: #1e3a8a;">
@@ -317,7 +313,7 @@
             <span><span id="net_income">0</span> 円</span>
         </div>
         <div class="note" style="color: #b45309; font-weight: 5px; margin-top: 8px;">
-            ※控除概算額（社会保険料、所得税、住民税等）は、一般的な目安として総支給額の約20%として一律で試算しています。実際の扶養家族数や前年の所得、お住まいの地域によって前後します。
+            ※控除概算額（社会保険料、所得税、住民税等）は、目安として総支給額の約20%として一律で試算しています。
         </div>
     </div>
 </div>
@@ -359,60 +355,60 @@ function updateDaysFromCycle() {
 
 function calculate() {
     var salary = parseFloat(document.getElementById('salary').value) || 0;
-    var workHours = 160;
-    var baseUnitPrice = salary / workHours;
 
     var daysD = parseFloat(document.getElementById('days_d').value) || 0;
     var daysS = parseFloat(document.getElementById('days_s').value) || 0;
     var daysN = parseFloat(document.getElementById('days_n').value) || 0;
 
-    var baseShiftHours = (daysD * 1.0) + (daysS * 6.5) + (daysN * 9.75);
-    var baseMidHours = (daysD * 0.0) + (daysS * 2.5) + (daysN * 6.5);
+    // 3項に基づく自動計算時間（N勤務の深夜時間を6.25時間に修正）
+    var autoShiftHours = (daysD * 1.0) + (daysS * 6.5) + (daysN * 9.75);
+    var autoMidHours = (daysD * 0.0) + (daysS * 2.5) + (daysN * 6.25);
 
-    var overtimeTotal = parseFloat(document.getElementById('overtime_total').value) || 0;
+    // 4項の直接手入力修正値の取得
+    var customShiftInput = document.getElementById('custom_shift').value;
+    var customMidInput = document.getElementById('custom_mid').value;
+
+    var baseShiftHours = (customShiftInput !== "") ? parseFloat(customShiftInput) : autoShiftHours;
+    var baseMidHours = (customMidInput !== "") ? parseFloat(customMidInput) : autoMidHours;
+
+    // 5項の残業時間
     var overtimeShift = parseFloat(document.getElementById('overtime_shift').value) || 0;
     var overtimeMidnight = parseFloat(document.getElementById('overtime_midnight').value) || 0;
 
+    // 時間の合算
     var rawShiftHours = baseShiftHours + overtimeShift;
     var rawMidHours = baseMidHours + overtimeMidnight;
-    var rawOvertimeHours = overtimeTotal;
 
+    // 小数点第2位を四捨五入して、小数第1位に丸める
     var totalShiftHours = Math.round(rawShiftHours * 10) / 10;
     var totalMidHours = Math.round(rawMidHours * 10) / 10;
-    var totalOvertimeHours = Math.round(rawOvertimeHours * 10) / 10;
 
     document.getElementById('total_shift_hours').innerText = totalShiftHours.toFixed(1);
     document.getElementById('total_mid_hours').innerText = totalMidHours.toFixed(1);
-    document.getElementById('total_overtime_hours').innerText = totalOvertimeHours.toFixed(1);
 
-    var shiftBase = (totalMidHours > 20) ? 13000 : 3000;
-    var shiftAddition = totalShiftHours * 450;
-    var midnightAllowance = baseUnitPrice * 0.25 * totalMidHours;
+    // 深夜時間が20時間以上で13000、未満で3000
+    var shiftBase = (totalMidHours >= 20) ? 13000 : 3000;
+
+    // 指定の計算式
+    // ① 深夜手当 = ((基本給 + 13000 or 3000) ÷ 120 + 450) × 夜勤時間 × 0.25
+    var midnightAllowance = ((salary + shiftBase) / 120 + 450) * totalMidHours * 0.25;
+
+    // ② シフト手当 = 13000 or 3000 + 450 × シフト時間
+    var shiftAllowanceFinal = shiftBase + (450 * totalShiftHours);
     
-    var overtimeAllowance = 0;
-    if (totalOvertimeHours > 60) {
-        overtimeAllowance = (baseUnitPrice * 1.25 * 60) + (baseUnitPrice * 1.50 * (totalOvertimeHours - 60));
-    } else {
-        overtimeAllowance = baseUnitPrice * 1.25 * totalOvertimeHours;
-    }
-    
-    // 各種手当合計
-    var totalAllowance = shiftBase + shiftAddition + midnightAllowance + overtimeAllowance;
+    // 手当合計
+    var totalAllowance = midnightAllowance + shiftAllowanceFinal;
 
     // 給与総合支給額・手取りの計算
-    var grossIncome = salary + totalAllowance; // 総支給額 (額面)
-    var deductionEstimate = grossIncome * 0.20; // 控除概算 (20%)
-    var netIncome = grossIncome - deductionEstimate; // 手取り予想 (80%)
+    var grossIncome = salary + totalAllowance; 
+    var deductionEstimate = grossIncome * 0.20; 
+    var netIncome = grossIncome - deductionEstimate; 
 
     // 画面表示への反映
-    document.getElementById('base_unit_price').innerText = baseUnitPrice.toLocaleString('ja-JP', {maximumFractionDigits: 2});
-    document.getElementById('shift_base').innerText = shiftBase.toLocaleString('ja-JP');
-    document.getElementById('shift_addition').innerText = Math.round(shiftAddition).toLocaleString('ja-JP');
     document.getElementById('midnight_allowance').innerText = Math.round(midnightAllowance).toLocaleString('ja-JP');
-    document.getElementById('overtime_allowance').innerText = Math.round(overtimeAllowance).toLocaleString('ja-JP');
+    document.getElementById('shift_allowance_final').innerText = Math.round(shiftAllowanceFinal).toLocaleString('ja-JP');
     document.getElementById('total_allowance').innerText = Math.round(totalAllowance).toLocaleString('ja-JP');
 
-    // 給与総合セクションへの反映
     document.getElementById('res_base_salary').innerText = salary.toLocaleString('ja-JP');
     document.getElementById('res_total_allowance').innerText = Math.round(totalAllowance).toLocaleString('ja-JP');
     document.getElementById('gross_income').innerText = Math.round(grossIncome).toLocaleString('ja-JP');
