@@ -391,7 +391,7 @@ function calculate() {
 
     // 指定の計算式
     // ① 深夜手当 = ((基本給 + 13000 or 3000) ÷ 120 + 450) × 夜勤時間 × 0.25
-    var midnightAllowance = ((salary + shiftBase) / 120 + 450) * totalMidHours * 0.25;
+    var midnightAllowance = ((salary + shiftBase) / 160 + 450) * totalMidHours * 0.25;
 
     // ② シフト手当 = 13000 or 3000 + 450 × シフト時間
     var shiftAllowanceFinal = shiftBase + (450 * totalShiftHours);
