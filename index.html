@@ -162,7 +162,7 @@
 
 <div class="container">
     <h1>給与・手当・手取り 総合計算</h1>
-    <div class="subtitle">業務企画職専用 / 新計算式・N勤深夜6.25h対応 / リアルタイム完全連動</div>
+    <div class="subtitle">業務企画職専用 / 新計算式(繰り上げ処理対応) / リアルタイム完全連動</div>
 
     <div class="section-title">1. 基本情報</div>
     <div class="form-group">
@@ -277,7 +277,11 @@
     <div class="section-title">7. 各種手当 計算結果</div>
     <div class="result-box">
         <div class="result-row">
-            <span>① 深夜手当:</span>
+            <span>※ 時間割金額 (小数第2位繰り上げ):</span>
+            <span><span class="val" id="hourly_rate">0</span> 円</span>
+        </div>
+        <div class="result-row">
+            <span>① 深夜手当 (小数点切り上げ):</span>
             <span><span class="val" id="midnight_allowance">0</span> 円</span>
         </div>
         <div class="result-row">
@@ -360,26 +364,21 @@ function calculate() {
     var daysS = parseFloat(document.getElementById('days_s').value) || 0;
     var daysN = parseFloat(document.getElementById('days_n').value) || 0;
 
-    // 3項に基づく自動計算時間（N勤務の深夜時間を6.25時間に修正）
     var autoShiftHours = (daysD * 1.0) + (daysS * 6.5) + (daysN * 9.75);
     var autoMidHours = (daysD * 0.0) + (daysS * 2.5) + (daysN * 6.25);
 
-    // 4項の直接手入力修正値の取得
     var customShiftInput = document.getElementById('custom_shift').value;
     var customMidInput = document.getElementById('custom_mid').value;
 
     var baseShiftHours = (customShiftInput !== "") ? parseFloat(customShiftInput) : autoShiftHours;
     var baseMidHours = (customMidInput !== "") ? parseFloat(customMidInput) : autoMidHours;
 
-    // 5項の残業時間
     var overtimeShift = parseFloat(document.getElementById('overtime_shift').value) || 0;
     var overtimeMidnight = parseFloat(document.getElementById('overtime_midnight').value) || 0;
 
-    // 時間の合算
     var rawShiftHours = baseShiftHours + overtimeShift;
     var rawMidHours = baseMidHours + overtimeMidnight;
 
-    // 小数点第2位を四捨五入して、小数第1位に丸める
     var totalShiftHours = Math.round(rawShiftHours * 10) / 10;
     var totalMidHours = Math.round(rawMidHours * 10) / 10;
 
@@ -389,9 +388,14 @@ function calculate() {
     // 深夜時間が20時間以上で13000、未満で3000
     var shiftBase = (totalMidHours >= 20) ? 13000 : 3000;
 
-    // 指定の計算式
-    // ① 深夜手当 = ((基本給 + 13000 or 3000) ÷ 120 + 450) × 夜勤時間 × 0.25
-    var midnightAllowance = ((salary + shiftBase) / 120 + 450) * totalMidHours * 0.25;
+    // 時間割金額 = (基本給 + 13000 or 3000) ÷ 160 + 450
+    // 小数点第2位を繰り上げて小数点第1位にする処理 (例: 1234.51 -> 1234.6)
+    var hourlyRateRaw = (salary + shiftBase) / 160 + 450;
+    var hourlyRate = Math.ceil(hourlyRateRaw * 10) / 10;
+
+    // ① 深夜手当 = 時間割金額 × 夜勤時間 × 0.25
+    // 小数点切り上げで自然数(整数)にする処理
+    var midnightAllowance = Math.ceil(hourlyRate * totalMidHours * 0.25);
 
     // ② シフト手当 = 13000 or 3000 + 450 × シフト時間
     var shiftAllowanceFinal = shiftBase + (450 * totalShiftHours);
@@ -404,14 +408,15 @@ function calculate() {
     var deductionEstimate = grossIncome * 0.20; 
     var netIncome = grossIncome - deductionEstimate; 
 
-    // 画面表示への反映
-    document.getElementById('midnight_allowance').innerText = Math.round(midnightAllowance).toLocaleString('ja-JP');
-    document.getElementById('shift_allowance_final').innerText = Math.round(shiftAllowanceFinal).toLocaleString('ja-JP');
-    document.getElementById('total_allowance').innerText = Math.round(totalAllowance).toLocaleString('ja-JP');
+    // 画面表示への反映 (計算が合っているか確認できるように時間割金額も表示させています)
+    document.getElementById('hourly_rate').innerText = hourlyRate.toLocaleString('ja-JP', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+    document.getElementById('midnight_allowance').innerText = midnightAllowance.toLocaleString('ja-JP');
+    document.getElementById('shift_allowance_final').innerText = shiftAllowanceFinal.toLocaleString('ja-JP');
+    document.getElementById('total_allowance').innerText = totalAllowance.toLocaleString('ja-JP');
 
     document.getElementById('res_base_salary').innerText = salary.toLocaleString('ja-JP');
-    document.getElementById('res_total_allowance').innerText = Math.round(totalAllowance).toLocaleString('ja-JP');
-    document.getElementById('gross_income').innerText = Math.round(grossIncome).toLocaleString('ja-JP');
+    document.getElementById('res_total_allowance').innerText = totalAllowance.toLocaleString('ja-JP');
+    document.getElementById('gross_income').innerText = grossIncome.toLocaleString('ja-JP');
     document.getElementById('deduction_estimate').innerText = Math.round(deductionEstimate).toLocaleString('ja-JP');
     document.getElementById('net_income').innerText = Math.round(netIncome).toLocaleString('ja-JP');
 }
